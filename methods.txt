@@ -1,0 +1,10 @@
+iterate over all workings
+
+keep a dictionary of all times of day and counter
+2 dicts: depart, arrive
+
+	loop over each station code
+		 check arrivals all day to see which terminate, and when they do
+		 check departures all day to see which "start here"
+
+on each tick, +departs, -arrives and then plot that for each time of day (do over multiple days so as to remove the effect of trains that aren't counted as they started before midnight on monday)
