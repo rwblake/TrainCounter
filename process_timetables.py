@@ -1,14 +1,4 @@
-import json
-from collections import defaultdict
 
-with open('response.json', 'r') as f:
-	content = json.load(f)
-
-station_tiploc = content["location"]["tiploc"]
-services = content["services"]
-
-originators = defaultdict(int)
-terminators = defaultdict(int)
 
 def get_originators(services, station_tiploc, originators):
 	"""modify the terminators dictionary with originators for the provided station"""
@@ -26,6 +16,7 @@ def get_originators(services, station_tiploc, originators):
 			departure_time = service["locationDetail"]["gbttBookedDeparture"]
 			originators[departure_time] += 1
 
+
 def get_terminators(services, station_tiploc, terminators):
 	"""modify the terminators dictionary with terminators for the provided station"""
 	for service in services:
@@ -42,5 +33,52 @@ def get_terminators(services, station_tiploc, terminators):
 			arrival_time = service["locationDetail"]["gbttBookedArrival"]
 			terminators[arrival_time] += 1
 
-get_originators(services, station_tiploc, originators)
-print(originators)
+
+def main():
+	import json
+	from collections import defaultdict
+	import pandas as pd
+	import os
+
+	df = pd.read_csv("uk-railway-stations/stations.csv")
+	station_CRSs = df["crsCode"].unique()
+	year     = "2025"
+	month    = "05"
+	day      = "19"
+
+	originators = defaultdict(int)
+	terminators = defaultdict(int)
+	for arrivals in [True, False]:
+		for station_CRS in station_CRSs:
+			if arrivals:
+				print(station_CRS)
+			path = f"data/{year}-{month}-{day}"
+			if arrivals:
+				path += "/arrivals"
+			else:
+				path += "/departures"
+			filename = f"{path}/{station_CRS}.json"
+			if not os.path.isfile(filename):
+				continue
+			with open(filename, 'r') as f:
+				content = json.load(f)
+			if "error" in content:
+				continue
+			station_tiploc = content["location"]["tiploc"]
+			services = content["services"]
+			if services is None:
+				continue
+
+			if arrivals:
+				get_terminators(services, station_tiploc, terminators)
+			else:
+				get_originators(services, station_tiploc, originators)
+
+	data = {"originators": dict(originators), "terminators": dict(terminators)}
+	with open(f"data/{year}-{month}-{day}/totals.json", "w") as f:
+		json.dump(data, f, indent=2)
+
+
+if __name__ == "__main__":
+	main()
+
